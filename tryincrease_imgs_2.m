@@ -1,4 +1,4 @@
-function try_increase_imgs(subjID, whichsoftware)
+function tryincrease_imgs_2(subjID, whichsoftware)
 % function internalpercepts_debug(subjID, whichsoftware)
 % subjID should be a string e.g. 'P101' % for convenience also add the TMS site with underscore - e.g. 'P101_LO'
 % whichsoftware is a string that 'octave' or 'matlab'
@@ -45,47 +45,33 @@ try
   WaitSecs(1); 													% Give the display a moment to recover 
   
   ctrPoint = [screenRect(3)./2 screenRect(4)./2];					% the point at the middle of the screen
-  ctrRect = CenterRect([0 0 200 300], screenRect);				% a rectangle that puts our image at the center of the screen
+  %ctrRect = CenterRect([0 0 200 300], screenRect);				% a rectangle that puts our image at the center of the screen
   
   
-  %%%%%%%%%                                               %%%%%%%%%%
-  % Here we LOAD parameters that are relevant to the experiment    % 
-  %%%%%%%%%                                               %%%%%%%%%%
-  
-  %internalsizepercepts_parameters; %% UPDATE TTHIS LATER
-
+  %% octave vs matlab directory
   if whichsoftware == 'octave'
   rootDir = 'C:/Users/uomom/Documents/internalsizepercept/'; % root directory for the experiment - Windows
   else
   rootDir = 'D:/Documents/Marco_Gandolfo/internalsizepercept/';		% root directory for the experiment in the lab - Windows
-  end
-  
-  numImages = 4; 											  % number of pictures in each condition and block
-  numBlocks = 1;											  % how many blocks of 32 trials do I want to test?
-  numDurs = 5;                                                % number of fixation durations, to jitter fixation cross durations
-  memotestpixDur = 2-0.5;                                     % number of screen frames for target stimuli in the memotestphase
-  testphasepixDur = 24;                                       % number of screen frames for the experimental test phase for the target picture
-  maskDur = 18;                                               % number of screen frames for the Mask
-  studyphasePixDur = 360;                                     % 6 seconds duration or keypress
-  numStudyReps = 1;                                           % how many times they repeat
-  fixDur = [45 60 90 105 120] - 0.5;												% number of screen frames for the Fixation; subtract 0.5 to compensate for timing jitter (see DriftWaitDemo.m)
-  maxRespDur = 2;												% timeout for the response (in seconds, not frames, because for this we use GetSecs rather than frame timing)
-  memtestpixdur = 2 - 0.5; %% duration of the picture for the memtest in frames
-  maxCatRespDur = 3; %% maximum time for categorical response in seconds
-  expphasepixDur = 21 - 0.5; %% 357 msecs
-  expphaseMaskDur = 6 -0.5; %% 100 ms
-  
+end
 
-  %%%%%%%%%                                              %%%%%%%%%%%%
-  % LOAD All Images into turbo textures                             %
-  %%%%%%%%%                                              %%%%%%%%%%%%
 
-  %internalpercepts_loadimages;  FIX LATER!!
-
+%% durations
+ maskDur = 18;                                               % number of screen frames for the image
+ fixDur = [45 60 90 105 120] - 0.5;	                          % no of screen frames for fixation randomdurations
+ 
+ 
   %% prepare texture for the response screen
   img = imread('01_flat_desert_furniture_gb.png');
 
   imgTexture = Screen('MakeTexture', window, img);
+  
+  scene = imread('01_flat_desert_full_furniture_2.jpg');
+  sceneTexture = Screen('MakeTexture', window, scene);
+  
+  mask = imread('themask.jpg');
+  
+  maskTexture = Screen('MakeTexture', window, mask);
   
   %% get size of image
   [imageHeight, imageWidth, colorChannels] = size(img);
@@ -95,6 +81,7 @@ try
   
   %% Center the rectangle
   destinationRect = CenterRect(imageRect, screenRect);
+  
 
 
 
@@ -104,64 +91,58 @@ try
   Screen('TextSize', window, 48);									% big font
   Screen('DrawText', window, 'Press a key when ready.', 20, 20);	% draw the ready signal offscreen
   vbl = Screen('Flip', window);									% flip it onscreen
-
-  %% set the base rectangle for the study phase
-  baseRect = [0 0 823 563];
-  %% Center this rectangle to Screen Center
-  centeredRect = CenterRectOnPointd(baseRect, ctrPoint(1), ctrPoint(2));
-  %% red and green color vectors
-  redcolor = [175 0 0];
-  greencolor = [0 175 0];
-
-  rectanglino = [0 0 800 533];
-
-
-  numsizes = 5;
-  sizesteps = [0.6 0.8 1 1.2 1.4];
-
-  sizelist = {};
-
-  for g = 1:numsizes
-    
-    destsizerect = imageRect./sizesteps(g);
-    rectsizelist{g} = destsizerect;
   
-  end
-   
-
-  KbWait; KbReleaseWait;											% hold on until any key is pressed and then released
-  experimentStart = GetSecs;			
-
-  %%%%%%%%%
-  % This is the main loop of the experiment (over trials)
-  % we will put up a fixation point, followed by the image
-  % we select a random fish/car on each trial (could be better!)
-  % we collect a keypress and a response time
-  %%%%%%%%%
+  %% Present the scene
+  Screen('DrawTexture', window, sceneTexture, [], destinationRect);
+  Screen('Flip', window);
   
-  for t = 1:size(rectsizelist,2)
-      
-     
-      %% fixation dot
-      Screen('gluDisk', window, 0, ctrPoint(1), ctrPoint(2), 8);  % draw fixation dot (offscreen)
-      vbl = Screen('Flip', window);	
-      
-      %% drawing the image from the right condition    
-      Screen('DrawTexture', window, ...							% draw an image offscreen in the right location -- try "Screen DrawTexture?" in command window
-   imgTexture, [], rectsizelist{t}); % 1st dimension is block, second dimension is full/box/foil 3rd dimension is the exemplar category 1-2-3-4
-   [vbl imgOnset(t) fts(t,1) mis(t,1) beam(t,1)] = ...			% (keep track of lots of Flip output)
-    Screen('Flip', window, vbl + (fixDur(randi(length(fixDur))) .* ifi)); %% flip image after a random duration of the cross
-   
-    
-    Screen('FillRect', window, [128 128 128], []);
-    [vbl maskOffset(t) fts(t,2) mis(t,2) beam(t,2)] = ...		% (keep track of lots of Flip output)
-    Screen('Flip', window, vbl + (maskDur .* ifi)); 
- 
-   
-      
-  end
+  WaitSecs(2);
+  KbWait();
+  
+  %%Present the mask
+  Screen('DrawTexture', window, maskTexture, [], destinationRect);
+  Screen('Flip', window);
+  
+  WaitSecs(2)
+  KbWait();
 
-  experimentEnd = GetSecs;										                          % time stamp the end of the study (more useful for fMRI/ERP?)
+  %% present image  
+  
+  Screen('DrawTexture', window, imgTexture, [], destinationRect);
+  Screen('Flip', window);
+  
+  WaitSecs(2)
+  KbWait();
+  
+  %% restart
+  
+   %% Present the scene
+  Screen('DrawTexture', window, sceneTexture, [], destinationRect);
+  Screen('Flip', window);
+  
+  WaitSecs(2);
+  KbWait();
+  
+  %%Present the mask
+  Screen('DrawTexture', window, maskTexture, [], destinationRect);
+  Screen('Flip', window);
+  
+  WaitSecs(2)
+  KbWait();
+  
+  %newsizeRect = OffsetRect(destinationRect, destinationRect(1)./0.5, destinationRect(2)./0.5);
+  newsizeRect = [destinationRect(1).*.2, destinationRect(2).*.2]; 
+  
+  Screen('Drawtexture', window, imgTexture, [], [newsizeRect(1), newsizeRect(2), destinationRect(3), destinationRect(4)]);
+  Screen('Flip', window);
+  
+  %
+  WaitSecs(2);
+  KbWait();
+  
+  %% now try to offset the image resizing it
+  
+   experimentEnd = GetSecs;										                          % time stamp the end of the study (more useful for fMRI/ERP?)
    
   Screen('CloseAll');												                            % close all the offscreen and onscreen windows
   ShowCursor;														                                % guess what?
@@ -180,5 +161,3 @@ fprintf('We''ve hit an error.\n');
 psychrethrow(psychlasterror);
 
 end
-
-
